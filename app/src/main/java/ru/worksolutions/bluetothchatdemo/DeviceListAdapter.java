@@ -17,12 +17,10 @@ public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.De
 
     private List<BluetoothDevice> devices;
     private DeviceSelectedListener listener;
-    private Context context;
 
-    public DeviceListAdapter(List<BluetoothDevice> devices, DeviceSelectedListener listener, Context context) {
+    public DeviceListAdapter(List<BluetoothDevice> devices, DeviceSelectedListener listener) {
         this.devices = devices;
         this.listener = listener;
-        this.context = context;
     }
 
     public interface DeviceSelectedListener {

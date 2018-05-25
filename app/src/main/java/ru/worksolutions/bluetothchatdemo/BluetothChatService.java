@@ -21,7 +21,6 @@ public class BluetothChatService {
 
     public static final int MESSAGE_READ = 0;
     public static final int MESSAGE_WRITE = 1;
-    public static final int MESSAGE_TOAST = 2;
 
     private BluetoothAdapter bluetoothAdapter;
     private AcceptThread acceptThread;
@@ -33,7 +32,7 @@ public class BluetothChatService {
         return connectedThread;
     }
 
-    public BluetothChatService(Handler handler) {
+    BluetothChatService(Handler handler) {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         this.handler = handler;
     }
@@ -41,12 +40,9 @@ public class BluetothChatService {
     private class AcceptThread extends Thread {
         private final BluetoothServerSocket mmServerSocket;
 
-        public AcceptThread() {
-            // Use a temporary object that is later assigned to mmServerSocket
-            // because mmServerSocket is final.
+        AcceptThread() {
             BluetoothServerSocket tmp = null;
             try {
-                // MY_UUID is the app's UUID string, also used by the client code.
                 tmp = bluetoothAdapter.listenUsingRfcommWithServiceRecord("BLUETOOTHCHAT", MY_UUID);
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Socket's listen() method failed", e);
@@ -55,8 +51,7 @@ public class BluetothChatService {
         }
 
         public void run() {
-            BluetoothSocket socket = null;
-            // Keep listening until exception occurs or a socket is returned.
+            BluetoothSocket socket;
             while (true) {
                 try {
                     socket = mmServerSocket.accept();
@@ -66,8 +61,6 @@ public class BluetothChatService {
                 }
 
                 if (socket != null) {
-                    // A connection was accepted. Perform work associated with
-                    // the connection in a separate thread.
                     manageMyConnectedSocket(socket);
                     try {
                         mmServerSocket.close();
@@ -79,7 +72,6 @@ public class BluetothChatService {
             }
         }
 
-        // Closes the connect socket and causes the thread to finish.
         public void cancel() {
             try {
                 mmServerSocket.close();
@@ -93,15 +85,11 @@ public class BluetothChatService {
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
 
-        public ConnectThread(BluetoothDevice device) {
-            // Use a temporary object that is later assigned to mmSocket
-            // because mmSocket is final.
+        ConnectThread(BluetoothDevice device) {
             BluetoothSocket tmp = null;
             mmDevice = device;
 
             try {
-                // Get a BluetoothSocket to connect with the given BluetoothDevice.
-                // MY_UUID is the app's UUID string, also used in the server code.
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Socket's create() method failed", e);
@@ -110,15 +98,11 @@ public class BluetothChatService {
         }
 
         public void run() {
-            // Cancel discovery because it otherwise slows down the connection.
             bluetoothAdapter.cancelDiscovery();
 
             try {
-                // Connect to the remote device through the socket. This call blocks
-                // until it succeeds or throws an exception.
                 mmSocket.connect();
             } catch (IOException connectException) {
-                // Unable to connect; close the socket and return.
                 try {
                     mmSocket.close();
                 } catch (IOException closeException) {
@@ -127,12 +111,9 @@ public class BluetothChatService {
                 return;
             }
 
-            // The connection attempt succeeded. Perform work associated with
-            // the connection in a separate thread.
             manageMyConnectedSocket(mmSocket);
         }
 
-        // Closes the client socket and causes the thread to finish.
         public void cancel() {
             try {
                 mmSocket.close();
@@ -144,19 +125,11 @@ public class BluetothChatService {
 
     public synchronized void start() {
 
-        // Cancel any thread attempting to make a connection
         if (connectThread != null) {
             connectThread.cancel();
             connectThread = null;
         }
 
-        // Cancel any thread currently running a connection
-        if (connectThread != null) {
-            connectThread.cancel();
-            connectThread = null;
-        }
-
-        // Start the thread to listen on a BluetoothServerSocket
         if (acceptThread == null) {
             acceptThread = new AcceptThread();
             acceptThread.start();
@@ -164,12 +137,6 @@ public class BluetothChatService {
     }
 
     public synchronized void connect(BluetoothDevice device) {
-
-
-        if (connectThread != null) {
-            connectThread.cancel();
-            connectThread = null;
-        }
 
         if (connectThread != null) {
             connectThread.cancel();
@@ -181,7 +148,7 @@ public class BluetothChatService {
         connectThread.start();
     }
 
-    public void manageMyConnectedSocket(BluetoothSocket socket){
+    private void manageMyConnectedSocket(BluetoothSocket socket){
         connectedThread = new ConnectedThread(socket);
         connectedThread.start();
     }
@@ -190,15 +157,13 @@ public class BluetothChatService {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
-        private byte[] mmBuffer; // mmBuffer store for the stream
+        private byte[] mmBuffer;
 
-        public ConnectedThread(BluetoothSocket socket) {
+        ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
 
-            // Get the input and output streams; using temp objects because
-            // member streams are final.
             try {
                 tmpIn = socket.getInputStream();
             } catch (IOException e) {
@@ -216,14 +181,11 @@ public class BluetothChatService {
 
         public void run() {
             mmBuffer = new byte[1024];
-            int numBytes; // bytes returned from read()
+            int numBytes;
 
-            // Keep listening to the InputStream until an exception occurs.
             while (true) {
                 try {
-                    // Read from the InputStream.
                     numBytes = mmInStream.read(mmBuffer);
-                    // Send the obtained bytes to the UI activity.
                     Message readMsg = handler.obtainMessage(
                             MESSAGE_READ, numBytes, -1,
                             mmBuffer);
@@ -235,12 +197,10 @@ public class BluetothChatService {
             }
         }
 
-        // Call this from the main activity to send data to the remote device.
-        public void write(byte[] bytes) {
+        void write(byte[] bytes) {
             try {
                 mmOutStream.write(bytes);
 
-                // Share the sent message with the UI activity.
                 Message writtenMsg = handler.obtainMessage(
                         MESSAGE_WRITE, -1, -1, mmBuffer);
                 writtenMsg.sendToTarget();
@@ -249,7 +209,6 @@ public class BluetothChatService {
             }
         }
 
-        // Call this method from the main activity to shut down the connection.
         public void cancel() {
             try {
                 mmSocket.close();

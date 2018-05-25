@@ -29,9 +29,6 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
 
     private BluetoothAdapter bluetoothAdapter;
-    private Button buttonReceive;
-    private Button buttonFind;
-    private RecyclerView deviceListRecycler;
     private List<BluetoothDevice> devices;
     private DeviceListAdapter deviceListAdapter;
     private Set<BluetoothDevice> pairedDevices;
@@ -61,8 +58,8 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
         setContentView(R.layout.activity_main);
 
         devices = new ArrayList<>();
-        deviceListAdapter = new DeviceListAdapter(devices, this, this);
-        deviceListRecycler = findViewById(R.id.device_list);
+        deviceListAdapter = new DeviceListAdapter(devices, this);
+        RecyclerView deviceListRecycler = findViewById(R.id.device_list);
         deviceListRecycler.setHasFixedSize(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         deviceListRecycler.setLayoutManager(layoutManager);
@@ -72,7 +69,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
 
         deviceListRecycler.setAdapter(deviceListAdapter);
 
-        buttonFind = findViewById(R.id.bluetooth_find);
+        Button buttonFind = findViewById(R.id.bluetooth_find);
         buttonFind.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -85,17 +82,14 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
                         new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
                         MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
                 bluetoothAdapter.startDiscovery();
-
-                Log.e(LOG_TAG, "SCAN");
             }
         });
 
-        buttonReceive = findViewById(R.id.bluetooth_receive);
+        Button buttonReceive = findViewById(R.id.bluetooth_receive);
         buttonReceive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 enableDiscoverability();
-                Log.e(LOG_TAG, "RECEIVE");
             }
         });
 
@@ -104,7 +98,6 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
             Log.e(LOG_TAG, "Doesn't support bluetooth");
         }
 
-        // Enable Bluetooth
         if (!bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, 1);
@@ -113,11 +106,8 @@ public class MainActivity extends AppCompatActivity implements DeviceListAdapter
         pairedDevices = bluetoothAdapter.getBondedDevices();
 
         if (pairedDevices.size() > 0) {
-            // There are paired devices. Get the name and address of each paired device.
-            for (BluetoothDevice device : pairedDevices) {
-                String deviceName = device.getName();
-                String deviceMACAddress = device.getAddress(); // MAC address
-            }
+            devices.addAll(pairedDevices);
+            deviceListAdapter.notifyDataSetChanged();
         }
 
         IntentFilter filter = new IntentFilter();

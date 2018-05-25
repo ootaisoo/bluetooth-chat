@@ -13,7 +13,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
 
     private List<String> messages;
 
-    public MessageAdapter(List<String> meesages) {
+    MessageAdapter(List<String> meesages) {
         this.messages = meesages;
     }
 
@@ -40,11 +40,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         notifyItemInserted(messages.indexOf(message));
     }
 
-    public class MessageViewHolder extends RecyclerView.ViewHolder{
+    class MessageViewHolder extends RecyclerView.ViewHolder{
 
         TextView message;
 
-        public MessageViewHolder(View itemView) {
+        MessageViewHolder(View itemView) {
             super(itemView);
             message = itemView.findViewById(R.id.message);
         }

@@ -14,21 +14,20 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
 import static ru.worksolutions.bluetothchatdemo.BluetothChatService.MESSAGE_READ;
-import static ru.worksolutions.bluetothchatdemo.BluetothChatService.MESSAGE_WRITE;
 
 public class ChatActivity extends AppCompatActivity {
 
     private MessageAdapter messageAdapter;
     private EditText editText;
-    private Button sendButton;
-    private List<String> messages;
-    private RecyclerView recyclerView;
     private BluetothChatService bluetothChatService;
     BluetoothDevice device;
+    MyHandler handler = new MyHandler(this);
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -38,11 +37,11 @@ public class ChatActivity extends AppCompatActivity {
         Intent intent = getIntent();
         device = intent.getParcelableExtra("device");
 
-        messages = new ArrayList<>();
+        List<String> messages = new ArrayList<>();
         messageAdapter = new MessageAdapter(messages);
         editText = findViewById(R.id.edit_text);
-        sendButton = findViewById(R.id.send);
-        recyclerView = findViewById(R.id.output);
+        Button sendButton = findViewById(R.id.send);
+        RecyclerView recyclerView = findViewById(R.id.output);
         recyclerView.setHasFixedSize(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
@@ -77,25 +76,27 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    private final Handler handler = new Handler(){
+    private static class MyHandler extends Handler{
+        private final WeakReference<ChatActivity> chatActivity;
+
+        public MyHandler(ChatActivity chatActivity) {
+            this.chatActivity = new WeakReference<ChatActivity>(chatActivity);
+        }
+
         @Override
         public void handleMessage(Message msg) {
-            switch (msg.what) {
-//                case MESSAGE_WRITE:
-//                    byte[] writeBuf = (byte[]) msg.obj;
-//                    // construct a string from the buffer
-//                    String writeMessage = new String(writeBuf);
-//
-//                    break;
-                case MESSAGE_READ:
-                    byte[] readBuf = (byte[]) msg.obj;
-                    // construct a string from the valid bytes in the buffer
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-                    if (readMessage.length() > 0) {
-                        messageAdapter.add(device + ":  " + readMessage);
-                    }
-                    break;
+            ChatActivity activity = chatActivity.get();
+            if (activity != null) {
+                switch (msg.what) {
+                    case MESSAGE_READ:
+                        byte[] readBuf = (byte[]) msg.obj;
+                        String readMessage = new String(readBuf, 0, msg.arg1);
+                        if (readMessage.length() > 0) {
+                            activity.messageAdapter.add(activity.device + ":  " + readMessage);
+                        }
+                        break;
+                }
             }
         }
-    };
+    }
 }
